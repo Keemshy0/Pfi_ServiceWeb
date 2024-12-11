@@ -41,6 +41,16 @@ class Accounts_API {
             });
         }
     }
+
+    static async GetUser(userId) {
+        return new Promise(resolve => {
+            $.ajax({
+                url: API_URL + "/" + userId,
+                success: user => { currentHttpError = ""; resolve(user); },
+                error: (xhr) => { currentHttpError = xhr.responseJSON.error_description; resolve(null); }
+            });
+        });
+    }
     static async Save(data, create = true) {
         Accounts_API.initHttpState();
         return new Promise(resolve => {

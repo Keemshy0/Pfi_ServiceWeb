@@ -167,8 +167,6 @@ function showAbout() {
 
 //////////////////////////// Posts rendering /////////////////////////////////////////////////////////////
 
-//////////////////////////// Posts rendering /////////////////////////////////////////////////////////////
-
 function start_Periodic_Refresh() {
     $("#reloadPosts").addClass('white');
     $("#reloadPosts").on('click', async function () {
@@ -246,15 +244,6 @@ async function getUserLikes(idPost) {
     }
     return userLikes
 }
-async function GetUser(userId){
-    let response = await Accounts_API.Get(userId)
-    if (!Accounts_API.error) {
-        return response.data;
-    } else {
-        showError(Posts_API.currentHttpError);
-        return null;
-    }
-}
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
     let crudIcon = ``;
@@ -278,7 +267,7 @@ function renderPost(post, loggedUser) {
     crudIcon += like;
     //
     let ownerId = post.Owner;
-    let user = GetUser(ownerId);
+    let user = Accounts_API.GetUser(ownerId);
     return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
@@ -404,8 +393,7 @@ function updateDropDownMenu() {
         await showPosts(true);
         updateDropDownMenu();
     });
-    $('#loginCmd').on('Click', function () {
-        console.log('tg');
+    $('#loginCmd').on('click', function () {
         showLogin();
     });
     $('.category').on("click", async function () {
@@ -688,9 +676,10 @@ function showLogin(verified = true) {
                     required
                 />
                 <span>${errorMDP}</span> 
-                <input type="submit" value="Entrer" id="Enter" class="btn btn-primary displayNone">
                 </br>
-                <input type="button" value="Nouveau compte" id="NewAccount" class="btn btn-primary displayNone">
+                <input type="submit" value="Entrer" id="Enter" class="btn btn-primary">
+                <hr>
+                <input type="button" value="Nouveau compte" id="NewAccount" class="btn btn-secondary">
             </form>
         `);
     }
