@@ -182,7 +182,7 @@ function start_Periodic_Refresh() {
             // the etag contain the number of model records in the following form
             // xxx-etag
             let postsCount = parseInt(etag.split("-")[0]);
-            if (currentETag != etag) {           
+            if (currentETag != etag) {
                 if (postsCount != currentPostsCount) {
                     console.log("postsCount", postsCount)
                     currentPostsCount = postsCount;
@@ -226,7 +226,7 @@ async function renderPosts(queryString) {
     removeWaitingGif();
     return endOfData;
 }
-async function getUserLikes(idPost){
+async function getUserLikes(idPost) {
     let queryString = "?keywords=" + idPost
     let userLikes = [];
     let response = await Likes_API.GetQuery(queryString);
@@ -255,38 +255,20 @@ function renderPost(post, loggedUser) {
     let crudIcon = ``;
     let like = ``;
     if(loggedUser != null){
-        if(loggedUser.isSuper){
-            if(post.Owner == loggedUser.Id){
-                crudIcon +=
-                `
-                <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
-                <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
-                `;
-            }
-        }
-        else if(loggedUser.isAdmin){
+        if(loggedUser.isSuper || loggedUser.isAdmin){
             crudIcon +=
                 `
                 <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
                 <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
                 `;
         }
-        
+
         let userLikes = getUserLikes(post.Id)
         let title = ""
-        let isLike = false;
         userLikes.forEach(user =>{
-            title += `${user.Name} <br>`
-            if(loggedUser.Id == user.Id){
-                isLike = true;
-            }
-        })
-        if(isLike){
-            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up title="${title}" onclick="modifierUnLike(${loggedUser.Id},${post.Id},true)">${userLikes.length}</span>`
-        }
-        else{
-            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up title="${title}" onclick="modifierUnLike(${loggedUser.Id},${post.Id},false)">${userLikes.length}</span>`
-        }
+            title += `${user.prenom} ${user.nom} <br>`
+        }) 
+        like += `<span class="likeCmd cmdIconSmall fa-thumbs-up title="${title}">${userLikes.length}</span>`
     }
     crudIcon += like;
     //
@@ -375,14 +357,14 @@ function updateDropDownMenu() {
     let DDMenu = $("#DDMenu");
     let selectClass = selectedCategory === "" ? "fa-check" : "fa-fw";
     DDMenu.empty();
-    if(!ConnectedUser){
+    if (!isConnected) {
         DDMenu.append($(`
         <div class="dropdown-item menuItemLayout" id="loginCmd">
             <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
         </div>
         `));
     }
-    else{
+    else {
         DDMenu.append($(`
             <div class="dropdown-item menuItemLayout" id="logoutCmd">
                 <i class="menuIcon fa-solid fa-right-to-bracket"></i> Déconnexion
@@ -416,6 +398,10 @@ function updateDropDownMenu() {
         selectedCategory = "";
         await showPosts(true);
         updateDropDownMenu();
+    });
+    $('#loginCmd').on('Click', function () {
+        console.log('tg');
+        showLogin();
     });
     $('.category').on("click", async function () {
         selectedCategory = $(this).text().trim();
@@ -668,4 +654,239 @@ function getFormData($form) {
         jsonObject[control.name] = control.value.replace(removeTag, "");
     });
     return jsonObject;
+}
+
+//////////////////////// Accounts rendering /////////////////////////////////////////////////////////////////
+
+function showLogin(verified = true) {
+    showForm();
+    $("#viewTitle").text("Connexion");
+    let error = "";
+    let errorMDP = "";
+    if (verified) {
+        $("#form").append(`
+            <form class="form" id="LoginForm">
+                <input 
+                    class="form-control Email"
+                    name="Email"
+                    id="Email"
+                    placeholder="Adresse courriel"
+                    required
+                />
+                <span>${error}</span>
+                <input 
+                    class="form-control"
+                    type="password"
+                    name="Password"
+                    id="Password"
+                    placeholder="Mot de passe"
+                    required
+                />
+                <span>${errorMDP}</span> 
+                <input type="submit" value="Entrer" id="Enter" class="btn btn-primary displayNone">
+                </br>
+                <input type="button" value="Nouveau compte" id="NewAccount" class="btn btn-primary displayNone">
+            </form>
+        `);
+    }
+    else {
+        $("#form").append(`
+            <span>Votre compte a été créé. Veillez prendre vos courriels pour réccupérer votre code de vérification qui 
+            vous sera demandé lors de votre prochaine connexion</span>
+            <form class="form" id="LoginForm">
+                <input 
+                    class="form-control Email"
+                    name="Email"
+                    id="Email"
+                    placeholder="Adresse courriel"
+                    required
+                />
+                <span>${error}</span>
+                <input 
+                    class="form-control"
+                    type="password"
+                    name="Password"
+                    id="Password"
+                    placeholder="Mot de passe"
+                    required
+                />
+                <span>${errorMDP}</span>
+                <input type="submit" value="Entrer" id="Enter" class="btn btn-primary displayNone">
+                </br>
+                <input type="button" value="Nouveau compte" id="NewAccount" class="btn btn-primary displayNone">
+            </form>
+            `);
+    }
+    $('#LoginForm').on("submit", async function (event) {
+        event.preventDefault();
+        let Account = getFormData($("#LoginForm"));
+        if (!Accounts_API.error) {
+            await showLogin(false);
+            AccountsPanel.scrollToElem(Account.Id);
+        }
+        else
+            showError("Une erreur est survenue! ", Accounts_API.currentHttpError);
+    });
+    $('#cancel').on("click", async function () {
+        await showPosts();
+    });
+}
+
+async function renderDeleteAccountForm(id) {
+    let response = await Accounts_API.Get(id)
+    if (!Accounts_API.error) {
+        let Account = response.data;
+        if (Account !== null) {
+            let date = convertToFrenchDate(UTC_To_Local(Account.Date));
+            $("#form").append(`
+                <div class="Account" id="${Account.Id}">
+                <div class="AccountHeader">  ${Account.Category} </div>
+                <div class="AccountTitle ellipsis"> ${Account.Title} </div>
+                <img class="AccountImage" src='${Account.Image}'/>
+                <div class="AccountDate"> ${date} </div>
+                <div class="AccountTextContainer showExtra">
+                    <div class="AccountText">${Account.Text}</div>
+                </div>
+            `);
+            linefeeds_to_Html_br(".AccountText");
+            // attach form buttons click event callback
+            $('#commit').on("click", async function () {
+                await Accounts_API.Delete(Account.Id);
+                if (!Accounts_API.error) {
+                    await showPosts();
+                }
+                else {
+                    console.log(Accounts_API.currentHttpError)
+                    showError("Une erreur est survenue!");
+                }
+            });
+            $('#cancel').on("click", async function () {
+                await showPosts();
+            });
+
+        } else {
+            showError("Compte introuvable!");
+        }
+    } else
+        showError(Accounts_API.currentHttpError);
+}
+function newAccount() {
+    let Account = {};
+    Account.Name = "";
+    Account.Email = "";
+    Account.Password = "";
+    Account.Avatar = "no-avatar.png";
+    Account.Created = 1;
+    Account.VerifyCode = "";
+    Account.Authorizations = AccessControl.user();
+    return Account;
+}
+function renderAccountForm(Account = null) {
+    let create = Account == null;
+    let error = "";
+    let errorMDP = "";
+    if (create) Account = newAccount();
+    $("#form").show();
+    $("#form").empty();
+    $("#form").append(`
+        <form class="form" id="AccountForm">
+            <label for="Email" class="form-label">Adresse courriel</label>
+            <fieldset>
+                <input 
+                    class="form-control Email"
+                    name="Email"
+                    id="Email"
+                    placeholder="courriel"
+                    required
+                    value="${Account.Email}"
+                />
+                <input
+                    class="form-control Email"
+                    name="Validation"
+                    id="Validation"
+                    placeholder=Vérification"
+                    required
+                    value="${Account.Email}"
+                />
+                <span>${error}</span>
+            </fieldset>
+
+            
+            <fieldset>
+                <input 
+                    class="form-control"
+                    name="Password"
+                    id="Password"
+                    type="password"
+                    placeholder="Mot de passe"
+                    required
+                    value="${Account.Password}"
+                />
+                <input
+                    class="form-control"
+                    name="ValidationMDP"
+                    id="ValidationMDP"
+                    type="password"
+                    placeholder=Vérification"
+                    required
+                    value="${Account.Password}"
+                />
+                <span>${errorMDP}</span>
+            </fieldset>
+
+            <fieldset>
+                <input 
+                    class="form-control"
+                    name="Name"
+                    id="Name"
+                    placeholder="Nom"
+                    required
+                    value="${Account.Name}"
+                />
+            </fieldset>
+
+            <label class="form-label">Image </label>
+            <div class='imageUploaderContainer'>
+                <div class='imageUploader' 
+                     newImage='${create}' 
+                     controlId='Image' 
+                     imageSrc='${Account.Avatar}' 
+                     waitingImage="Loading_icon.gif">
+                </div>
+            </div>
+            <input type="submit" value="Enregistrer" id="saveAccount" class="btn btn-primary displayNone">
+        </form>
+    `);
+    initImageUploaders();
+    initFormValidation(); // important do to after all html injection!
+
+    $("#commit").click(function () {
+        $("#commit").off();
+        return $('#saveAccount').trigger("click");
+    });
+    $('#Email').on("change", () => {
+        addConflictValidation("/api/validate-Email", "Email", "saveAccount");
+    });
+    $('#AccountForm').on("submit", async function (event) {
+        event.preventDefault();
+        if ($('#Validation').val() != $('#Email').val()) {
+            error = "Les courriel ne corespondent pas";
+        }
+        else if ($('#ValidationMDP').val() != $('#Password').val()) {
+            errorMDP = "Les mots de passe ne corespondent pas";
+        }
+        else {
+            let Account = getFormData($("#AccountForm"));
+            Account = await Accounts_API.Save(Account, create);
+            if (!Accounts_API.error) {
+                await showLogin(false);
+                AccountsPanel.scrollToElem(Account.Id);
+            }
+            else
+                showError("Une erreur est survenue! ", Accounts_API.currentHttpError);
+        }
+    });
+    $('#cancel').on("click", async function () {
+        await showPosts();
+    });
 }
