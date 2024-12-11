@@ -246,6 +246,7 @@ async function getUserLikes(idPost) {
 }
 async function GetUser(idUser){
     resultat = await Accounts_API.GetUser(idUser)
+    return resultat.data
 }
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
