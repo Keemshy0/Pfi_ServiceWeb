@@ -236,7 +236,7 @@ async function getUserLikes(idPost) {
         let Likes = response.data;
         if (Likes.length > 0) {
             Likes.forEach(Like => {
-                response = Users_API.Get(Like.idUser)
+                response = Accounts_API.Get(Like.idUser)
                 let user = response.data
                 userLikes.push(user)
             });
@@ -246,9 +246,14 @@ async function getUserLikes(idPost) {
     }
     return userLikes
 }
-function GetUser(userId){
-    response = Users_API.Get(userId)
-    return response.data
+async function GetUser(userId){
+    let response = await Accounts_API.Get(userId)
+    if (!Accounts_API.error) {
+        return response.data;
+    } else {
+        showError(Posts_API.currentHttpError);
+        return null;
+    }
 }
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
@@ -312,15 +317,15 @@ async function modifierUnLike(idUser, idPost, retirer){
                 });
             }
         } else {
-            showError(Posts_API.currentHttpError);
+            showError(Likes_API.currentHttpError);
         }
         if(likeOwner != null){
             await Likes_API.Delete(likeOwner.Id);
-            if (!Posts_API.error) {
+            if (!Likes_API.error) {
                 await showPosts();
             }
             else {
-                console.log(Posts_API.currentHttpError)
+                console.log(Likes_API.currentHttpError)
                 showError("Une erreur est survenue!");
             }
         }
@@ -328,11 +333,11 @@ async function modifierUnLike(idUser, idPost, retirer){
     else{
         let data = { "idUser":idUser, "idPost":idPost }
         await Likes_API.Save(data);
-        if (!Posts_API.error) {
+        if (!Likes_API.error) {
             await showPosts();
         }
         else {
-            console.log(Posts_API.currentHttpError)
+            console.log(Likes_API.currentHttpError)
             showError("Une erreur est survenue!");
         }
     }
