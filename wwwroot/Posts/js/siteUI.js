@@ -246,12 +246,25 @@ async function getUserLikes(idPost){
     }
     return userLikes
 }
+function GetUser(userId){
+    response = Users_API.Get(userId)
+    return response.data
+}
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
     let crudIcon = ``;
     let like = ``;
     if(loggedUser != null){
-        if(loggedUser.isSuper || loggedUser.isAdmin){
+        if(loggedUser.isSuper){
+            if(post.Owner == loggedUser.Id){
+                crudIcon +=
+                `
+                <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
+                <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
+                `;
+            }
+        }
+        else if(loggedUser.isAdmin){
             crudIcon +=
                 `
                 <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
@@ -263,19 +276,22 @@ function renderPost(post, loggedUser) {
         let title = ""
         let isLike = false;
         userLikes.forEach(user =>{
-            title += `${user.prenom} ${user.nom} <br>`
+            title += `${user.Name} <br>`
             if(loggedUser.Id == user.Id){
                 isLike = true;
             }
         })
         if(isLike){
-            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up title="${title}">${userLikes.length}</span>`
+            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up title="${title}" onclick="modifierUnLike(${loggedUser.Id},${post.Id},true)">${userLikes.length}</span>`
         }
         else{
-            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up title="${title}">${userLikes.length}</span>`
+            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up title="${title}" onclick="modifierUnLike(${loggedUser.Id},${post.Id},false)">${userLikes.length}</span>`
         }
     }
     crudIcon += like;
+    //
+    let ownerId = post.Owner;
+    let user = GetUser(ownerId);
     return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
@@ -285,6 +301,8 @@ function renderPost(post, loggedUser) {
             <div class="postTitle"> ${post.Title} </div>
             <img class="postImage" src='${post.Image}'/>
             <div class="postDate"> ${date} </div>
+            <img class="avatar postOwner" src='${user.Avatar}'/>
+            <div class="name postOwner"> ${user.Name} </div>
             <div postId="${post.Id}" class="postTextContainer hideExtra">
                 <div class="postText" >${post.Text}</div>
             </div>
@@ -294,6 +312,48 @@ function renderPost(post, loggedUser) {
             </div>         
         </div>
     `);
+}
+async function modifierUnLike(idUser, idPost, retirer){
+    if(retirer){
+        let queryString = "?keywords=" + idPost
+        let likeOwner = null;
+        let response = await Likes_API.GetQuery(queryString);
+        if (!Likes_API.error) {
+            currentETag = response.ETag;
+            currentPostsCount = parseInt(currentETag.split("-")[0]);
+            let Likes = response.data;
+            if (Likes.length > 0) {
+                Likes.forEach(Like => {
+                    if(Like.idUser == idUser){
+                        likeOwner = Like;
+                    }
+                });
+            }
+        } else {
+            showError(Posts_API.currentHttpError);
+        }
+        if(likeOwner != null){
+            await Likes_API.Delete(likeOwner.Id);
+            if (!Posts_API.error) {
+                await showPosts();
+            }
+            else {
+                console.log(Posts_API.currentHttpError)
+                showError("Une erreur est survenue!");
+            }
+        }
+    }
+    else{
+        let data = { "idUser":idUser, "idPost":idPost }
+        await Likes_API.Save(data);
+        if (!Posts_API.error) {
+            await showPosts();
+        }
+        else {
+            console.log(Posts_API.currentHttpError)
+            showError("Une erreur est survenue!");
+        }
+    }
 }
 async function compileCategories() {
     categories = [];
