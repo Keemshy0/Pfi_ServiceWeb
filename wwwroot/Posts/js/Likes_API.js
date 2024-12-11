@@ -17,29 +17,29 @@ class Likes_API {
         this.error = true;
     }
     static async HEAD() {
-        Posts_API.initHttpState();
+        Likes_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
                 url: this.LIKES_API_URL(),
                 type: 'HEAD',
                 contentType: 'text/plain',
                 complete: data => { resolve(data.getResponseHeader('ETag')); },
-                error: (xhr) => { Posts_API.setHttpErrorState(xhr); resolve(null); }
+                error: (xhr) => { Likes_API.setHttpErrorState(xhr); resolve(null); }
             });
         });
     }
     static async Get(id = null) {
-        Posts_API.initHttpState();
+        Likes_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
                 url: this.LIKES_API_URL() + (id != null ? "/" + id : ""),
                 complete: data => { resolve({ ETag: data.getResponseHeader('ETag'), data: data.responseJSON }); },
-                error: (xhr) => { Posts_API.setHttpErrorState(xhr); resolve(null); }
+                error: (xhr) => { Likes_API.setHttpErrorState(xhr); resolve(null); }
             });
         });
     }
     static async GetQuery(queryString = "") {
-        Posts_API.initHttpState();
+        Likes_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
                 url: this.LIKES_API_URL() + queryString,
@@ -47,13 +47,13 @@ class Likes_API {
                     resolve({ ETag: data.getResponseHeader('ETag'), data: data.responseJSON });
                 },
                 error: (xhr) => {
-                    Posts_API.setHttpErrorState(xhr); resolve(null);
+                    Likes_API.setHttpErrorState(xhr); resolve(null);
                 }
             });
         });
     }
     static async Save(data, create = true) {
-        Posts_API.initHttpState();
+        Likes_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
                 url: create ? this.LIKES_API_URL() : this.LIKES_API_URL() + "/" + data.Id,
@@ -61,7 +61,7 @@ class Likes_API {
                 contentType: 'application/json',
                 data: JSON.stringify(data),
                 success: (data) => { resolve(data); },
-                error: (xhr) => { Posts_API.setHttpErrorState(xhr); resolve(null); }
+                error: (xhr) => { Likes_API.setHttpErrorState(xhr); resolve(null); }
             });
         });
     }
@@ -71,11 +71,11 @@ class Likes_API {
                 url: this.LIKES_API_URL() + "/" + id,
                 type: "DELETE",
                 success: () => {
-                    Posts_API.initHttpState();
+                    Likes_API.initHttpState();
                     resolve(true);
                 },
                 error: (xhr) => {
-                    Posts_API.setHttpErrorState(xhr); resolve(null);
+                    Likes_API.setHttpErrorState(xhr); resolve(null);
                 }
             });
         });
