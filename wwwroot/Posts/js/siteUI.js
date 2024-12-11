@@ -17,6 +17,8 @@ let itemLayout;
 let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
+let isConnected = false;
+let connectedUser = null;
 
 Init_UI();
 async function Init_UI() {
@@ -271,6 +273,20 @@ function updateDropDownMenu() {
     let DDMenu = $("#DDMenu");
     let selectClass = selectedCategory === "" ? "fa-check" : "fa-fw";
     DDMenu.empty();
+    if(!ConnectedUser){
+        DDMenu.append($(`
+        <div class="dropdown-item menuItemLayout" id="loginCmd">
+            <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
+        </div>
+        `));
+    }
+    else{
+        DDMenu.append($(`
+            <div class="dropdown-item menuItemLayout" id="logoutCmd">
+                <i class="menuIcon fa-solid fa-right-to-bracket"></i> Déconnexion
+            </div>
+            `));
+    }
     DDMenu.append($(`
         <div class="dropdown-item menuItemLayout" id="allCatCmd">
             <i class="menuIcon fa ${selectClass} mx-2"></i> Toutes les catégories
