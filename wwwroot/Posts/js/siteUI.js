@@ -224,14 +224,47 @@ async function renderPosts(queryString) {
     removeWaitingGif();
     return endOfData;
 }
+async function getUserLikes(idPost){
+    let queryString = "?keywords=" + idPost
+    let userLikes = [];
+    let response = await Likes_API.GetQuery(queryString);
+    if (!Likes_API.error) {
+        currentETag = response.ETag;
+        currentPostsCount = parseInt(currentETag.split("-")[0]);
+        let Likes = response.data;
+        if (Likes.length > 0) {
+            Likes.forEach(Like => {
+                response = Users_API.Get(Like.idUser)
+                let user = response.data
+                userLikes.push(user)
+            });
+        }
+    } else {
+        showError(Posts_API.currentHttpError);
+    }
+    return userLikes
+}
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
-    let crudIcon =
-        `
-        <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
-        <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
-        `;
-
+    let crudIcon = ``;
+    let like = ``;
+    if(loggedUser != null){
+        if(loggedUser.isSuper || loggedUser.isAdmin){
+            crudIcon +=
+                `
+                <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
+                <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
+                `;
+        }
+        
+        let userLikes = getUserLikes(post.Id)
+        let title = ""
+        userLikes.forEach(user =>{
+            title += `${user.prenom} ${user.nom} <br>`
+        }) 
+        like += `<span class="likeCmd cmdIconSmall fa-thumbs-up title="${title}">${userLikes.length}</span>`
+    }
+    crudIcon += like;
     return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
