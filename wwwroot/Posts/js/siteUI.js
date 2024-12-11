@@ -261,10 +261,19 @@ function renderPost(post, loggedUser) {
         
         let userLikes = getUserLikes(post.Id)
         let title = ""
+        let isLike = false;
         userLikes.forEach(user =>{
             title += `${user.prenom} ${user.nom} <br>`
-        }) 
-        like += `<span class="likeCmd cmdIconSmall fa-thumbs-up title="${title}">${userLikes.length}</span>`
+            if(loggedUser.Id == user.Id){
+                isLike = true;
+            }
+        })
+        if(isLike){
+            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up title="${title}">${userLikes.length}</span>`
+        }
+        else{
+            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up title="${title}">${userLikes.length}</span>`
+        }
     }
     crudIcon += like;
     return $(`
