@@ -264,7 +264,7 @@ function renderPost(post, loggedUser) {
         }) 
         like += `<span class="likeCmd cmdIconSmall fa-thumbs-up title="${title}">${userLikes.length}</span>`
     }
-    crudIcon += like;
+    crudIcon += like;s
     return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
