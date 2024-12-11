@@ -234,7 +234,7 @@ async function getUserLikes(idPost) {
         let Likes = response.data;
         if (Likes.length > 0) {
             Likes.forEach(Like => {
-                response = Accounts_API.Get(Like.idUser)
+                response = Accounts_API.GetUser(Like.idUser)
                 let user = response.data
                 userLikes.push(user)
             });
@@ -243,6 +243,9 @@ async function getUserLikes(idPost) {
         showError(Posts_API.currentHttpError);
     }
     return userLikes
+}
+async function GetUser(idUser){
+    resultat = await Accounts_API.GetUser(idUser)
 }
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
@@ -266,8 +269,7 @@ function renderPost(post, loggedUser) {
     }
     crudIcon += like;
     //
-    let ownerId = post.Owner;
-    let user = Accounts_API.GetUser(ownerId);
+    let user = GetUser(post.Owner);
     return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
