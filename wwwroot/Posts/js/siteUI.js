@@ -275,14 +275,23 @@ function renderPost(post, loggedUser) {
         })
         let title = "";
         let nbLike = 0;
+        liker = false;
         console.log(userLikes);
         if(userLikes.res != undefined){
             userLikes.forEach(user =>{
                 title += `${user.prenom} ${user.nom} <br>`
+                if(user.Id == loggedUser.Id){
+                    liker = true;
+                }
             })
             nbLike = userLikes.length
         }   // fa-solid fa-regular qui appelle la fonction modifier Like
-        like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up title="${title}">${nbLike}</span>`
+        if(liker){
+            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up onclick="modifierUnLike(${post.Id},${loggedUser.Id}, true)" title="${title}">${nbLike}</span>`
+        }
+        else{
+            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up onclick="modifierUnLike(${post.Id},${loggedUser.Id})" title="${title}">${nbLike}</span>`
+        }
     }
     crudIcon += like;
     //
@@ -308,7 +317,7 @@ function renderPost(post, loggedUser) {
         </div>
     `);
 }
-async function modifierUnLike(idUser, idPost, retirer){
+async function modifierUnLike(idUser, idPost, retirer = false){
     if(retirer){
         let queryString = "?keywords=" + idPost
         let likeOwner = null;
