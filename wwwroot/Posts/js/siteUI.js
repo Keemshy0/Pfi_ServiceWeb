@@ -144,7 +144,7 @@ function showError(message, details = "") {
 function showCreatePostForm() {
     showForm();
     $("#viewTitle").text("Ajout de nouvelle");
-    renderPostForm();
+    renderPostForm(loggedUser);
 }
 function showEditPostForm(id) {
     showForm();
@@ -193,6 +193,11 @@ function start_Periodic_Refresh() {
     },
         periodicRefreshPeriod * 1000);
 }
+
+//
+let loggedUser = "78f177e0-46c0-11ee-9c7d-4dfffb69e19c";
+//
+
 async function renderPosts(queryString) {
     let endOfData = false;
     queryString += "&sort=date,desc";
@@ -211,7 +216,7 @@ async function renderPosts(queryString) {
         let Posts = response.data;
         if (Posts.length > 0) {
             Posts.forEach(Post => {
-                postsPanel.append(renderPost(Post));
+                postsPanel.append(renderPost(Post, loggedUser));    //loggedUser
             });
         } else
             endOfData = true;
@@ -238,14 +243,18 @@ async function getUserLikes(idPost) {
                 let user = response.data
                 userLikes.push(user)
             });
+            return userLikes;
         }
     } else {
         showError(Posts_API.currentHttpError);
     }
-    return userLikes
+    return [];
 }
 async function GetUser(idUser){
+    console.log("Get User")
     resultat = await Accounts_API.GetUser(idUser)
+    console.log("Apres await")
+    console.log(resultat)
     return resultat.data
 }
 function renderPost(post, loggedUser) {
@@ -261,12 +270,19 @@ function renderPost(post, loggedUser) {
                 `;
         }
 
-        let userLikes = getUserLikes(post.Id)
-        let title = ""
-        userLikes.forEach(user =>{
-            title += `${user.prenom} ${user.nom} <br>`
-        }) 
-        like += `<span class="likeCmd cmdIconSmall fa-thumbs-up title="${title}">${userLikes.length}</span>`
+        let userLikes = getUserLikes(post.Id).then((res)=>{
+            userLikes = res;
+        })
+        let title = "";
+        let nbLike = 0;
+        console.log(userLikes);
+        if(userLikes.res != undefined){
+            userLikes.forEach(user =>{
+                title += `${user.prenom} ${user.nom} <br>`
+            })
+            nbLike = userLikes.length
+        }   // fa-solid fa-regular qui appelle la fonction modifier Like
+        like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up title="${title}">${nbLike}</span>`
     }
     crudIcon += like;
     //
@@ -503,7 +519,7 @@ async function renderEditPostForm(id) {
     if (!Posts_API.error) {
         let Post = response.data;
         if (Post !== null)
-            renderPostForm(Post);
+            renderPostForm(loggedUser, Post);
         else
             showError("Post introuvable!");
     } else {
@@ -556,16 +572,19 @@ function newPost() {
     Post.Text = "";
     Post.Image = "news-logo-upload.png";
     Post.Category = "";
+    Post.Owner = "";
     return Post;
 }
-function renderPostForm(post = null) {
+function renderPostForm(loggedUser, post = null) {
     let create = post == null;
     if (create) post = newPost();
+    if (create) post.Owner = loggedUser.Id;
     $("#form").show();
     $("#form").empty();
     $("#form").append(`
         <form class="form" id="postForm">
             <input type="hidden" name="Id" value="${post.Id}"/>
+            <input type="hidden" name="Owner" value="${post.Owner}"/>
              <input type="hidden" name="Date" value="${post.Date}"/>
             <label for="Category" class="form-label">Catégorie </label>
             <input 

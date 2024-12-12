@@ -1,4 +1,3 @@
-import AccessControl from './accessControl.js';
 
 class Accounts_API {
     static Host_URL() { return "http://localhost:5000"; }
@@ -30,6 +29,7 @@ class Accounts_API {
         });
     }
     static async Get(access) {
+        console.log("Allo");
         if (access == AccessControl.admin()) {
             Accounts_API.initHttpState();
             return new Promise(resolve => {
