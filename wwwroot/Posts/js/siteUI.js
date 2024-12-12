@@ -252,7 +252,7 @@ async function getUserLikes(idPost) {
         let Likes = response.data;
         if (Likes.length > 0) {
             Likes.forEach(Like => {
-                response = Accounts_API.Get(Like.idUser)
+                response = Accounts_API.GetUser(Like.idUser)
                 let user = response.data
                 userLikes.push(user)
             });
@@ -265,7 +265,10 @@ async function getUserLikes(idPost) {
 }
 async function GetUser(idUser) {
     console.log("Get User")
-    resultat = await Accounts_API.Get(idUser)
+    resultat = await Accounts_API.GetUser(idUser).then(res=>{
+        console.log(res);
+        resultat = res;
+    })
     console.log("Apres await")
     console.log(resultat)
     return resultat.data
@@ -308,6 +311,7 @@ function renderPost(post, loggedUser) {
     }
     crudIcon += like;
     //
+    console.log(post.Owner);
     let user = GetUser(post.Owner);
     return $(`
         <div class="post" id="${post.Id}">
