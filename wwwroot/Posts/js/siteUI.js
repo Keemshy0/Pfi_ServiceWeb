@@ -195,7 +195,20 @@ function start_Periodic_Refresh() {
 }
 
 //
-let loggedUser = "78f177e0-46c0-11ee-9c7d-4dfffb69e19c";
+let loggedUser = {
+    "Email": "Saliha.Yacoub@clg.qc.ca",
+    "Password": "password",
+    "Name": "Saliha Yacoub",
+    "Avatar": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c.png",
+    "Created": 1731790056,
+    "VerifyCode": "verified",
+    "Authorizations": {
+        "readAccess": 2,
+        "writeAccess": 2
+    },
+    "Verifycode": "verified",
+    "Id": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c"
+}
 //
 
 async function renderPosts(queryString) {
@@ -239,7 +252,7 @@ async function getUserLikes(idPost) {
         let Likes = response.data;
         if (Likes.length > 0) {
             Likes.forEach(Like => {
-                response = Accounts_API.GetUser(Like.idUser)
+                response = Accounts_API.Get(Like.idUser)
                 let user = response.data
                 userLikes.push(user)
             });
@@ -252,7 +265,7 @@ async function getUserLikes(idPost) {
 }
 async function GetUser(idUser) {
     console.log("Get User")
-    resultat = await Accounts_API.GetUser(idUser)
+    resultat = await Accounts_API.Get(idUser)
     console.log("Apres await")
     console.log(resultat)
     return resultat.data
@@ -287,10 +300,10 @@ function renderPost(post, loggedUser) {
             nbLike = userLikes.length
         }   // fa-solid fa-regular qui appelle la fonction modifier Like
         if(liker){
-            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up onclick="modifierUnLike(${post.Id},${loggedUser.Id}, true)" title="${title}">${nbLike}</span>`
+            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up" onclick="modifierUnLike(${post.Id},${loggedUser.Id}, true)" title="${title}">${nbLike}</span>`
         }
         else{
-            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up onclick="modifierUnLike(${post.Id},${loggedUser.Id})" title="${title}">${nbLike}</span>`
+            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up" onclick="modifierUnLike('${post.Id}','${loggedUser.Id}')" title="${title}">${nbLike}</span>`
         }
     }
     crudIcon += like;
@@ -318,6 +331,7 @@ function renderPost(post, loggedUser) {
     `);
 }
 async function modifierUnLike(idUser, idPost, retirer = false){
+    console.log("Modifier Like");
     if(retirer){
         let queryString = "?keywords=" + idPost
         let likeOwner = null;
@@ -348,7 +362,7 @@ async function modifierUnLike(idUser, idPost, retirer = false){
         }
     }
     else {
-        let data = { "idUser": idUser, "idPost": idPost }
+        let data = { "IdUser": idUser, "IdPost": idPost }
         await Likes_API.Save(data);
         if (!Likes_API.error) {
             await showPosts();
