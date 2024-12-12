@@ -458,7 +458,7 @@ function updateDropDownMenu() {
         renderUserForm(ConnectedUser);
     });
     $("#logoutCmd").on("click", function () {
-        Accounts_API.Logout(ConnectedUser.Id);
+        Accounts_API.Logout(ConnectedUser .Id);
     });
     $('.category').on("click", async function () {
         selectedCategory = $(this).text().trim();

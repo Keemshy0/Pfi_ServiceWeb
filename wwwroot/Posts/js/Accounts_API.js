@@ -1,7 +1,7 @@
 
 class Accounts_API {
     static Host_URL() { return "http://localhost:5000"; }
-    static AccountS_API_URL() { return this.Host_URL() + "/accounts/register" };
+    static AccountS_API_URL() { return this.Host_URL() + "/api/accounts" };
 
     static initHttpState() {
         this.currentHttpError = "";
@@ -56,8 +56,8 @@ class Accounts_API {
         Accounts_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: create ? this.AccountS_API_URL() : "http://localhost:5000/accounts/modify/",
-                type: create ? "POST" : "PUT",
+                url: create ? this.AccountS_API_URL() + "/register" : "http://localhost:5000/accounts/modify/",
+                type: create ? "Account" : "PUT",
                 contentType: 'application/json',
                 headers:{
                     "Authorization": `Bearer ${TokenAccount}`
@@ -69,7 +69,7 @@ class Accounts_API {
                         showLogin(true);
                     }
                     else{
-                        showPosts();
+                        showAccounts();
                     }
                     
                 },
@@ -80,7 +80,7 @@ class Accounts_API {
     static async Delete(id) {
         return new Promise(resolve => {
             $.ajax({
-                url: this.POSTS_API_URL() + "/" + id,
+                url: this.AccountS_API_URL() + "/" + id,
                 type: "DELETE",
                 success: () => {
                     Accounts_API.initHttpState();
@@ -96,7 +96,7 @@ class Accounts_API {
     static Connect(Email, Password) {
         $.ajax({
             url: this.Host_URL() + "/token",
-            type: "POST",
+            type: "Account",
             contentType: 'application/json',
             data: JSON.stringify({ "Email": Email, "Password": Password }),
             success: function (response) {
@@ -115,17 +115,21 @@ class Accounts_API {
     }
     static Logout(id) {
         $.ajax({
-            url: "http://localhost:5000/accounts/logout",
-            type: "GET",
-            headers:{
-                "Authorization": `Bearer ${TokenUser}`
+            url: `http://localhost:5000/accounts/logout?accountId=${id}`,
+            type: "Account",
+            headers: {
+                "Authorization": `Bearer ${TokenUser }`
             },
             success: function (response) {
-                TokenUser = null;
-                ConnectedUser = null;
+                TokenUser  = null;
+                ConnectedUser  = null;
                 IsConnected = false;
-                showPosts();
+                showAccounts();
             },
+            error: function (xhr, status, error) {
+                console.error("Logout failed:", status, error);
+                // Handle error response
+            }
         });
     }
     static Verify(id, code) {
@@ -144,7 +148,7 @@ class Accounts_API {
     static async SuccesCode() {
         ConnectedUser = User;
         IsConnected = true;
-        await showPosts();
+        await showAccounts();
         
     }
     static async SuccesConnect(User) {
@@ -154,7 +158,7 @@ class Accounts_API {
             showVerifyCode();
         }
         else {
-            await showPosts();
+            await showAccounts();
             IsConnected = true;
         }
     }
