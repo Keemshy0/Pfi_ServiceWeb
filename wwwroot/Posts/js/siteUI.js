@@ -17,8 +17,8 @@ let itemLayout;
 let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
-let ConnectedUser = null;
-let IsConnected = false;
+let ConnectedUser = localStorage.getItem('userSession');
+let IsConnected = ConnectedUser == null ? false : true ;
 
 Init_UI();
 async function Init_UI() {
