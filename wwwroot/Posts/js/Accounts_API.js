@@ -38,6 +38,16 @@ class Accounts_API {
             });
         });
     }
+    static async GetUser(id) {
+        Accounts_API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: this.AccountS_API_URL() + "/getUser?id=" + id,
+                complete: data => { resolve({ ETag: data.getResponseHeader('ETag'), data: data.responseJSON }); },
+                error: (xhr) => { Accounts_API.setHttpErrorState(xhr); resolve(null); }
+            });
+        });
+    }
     static async GetQuery(queryString = "") {
         Accounts_API.initHttpState();
         return new Promise(resolve => {
