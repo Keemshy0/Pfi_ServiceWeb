@@ -14,6 +14,7 @@ export default class AccountsController extends Controller {
         if (this.repository != null) {
             if (id !== '') {
                 let data = this.repository.get(id);
+                console.log("Data : ",data)
                 if (data != null)
                     this.HttpContext.response.JSON(data);
                 else
