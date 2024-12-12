@@ -17,8 +17,8 @@ let itemLayout;
 let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
-let isConnected = false;
-let connectedUser = null;
+let ConnectedUser = null;
+let IsConnected = false;
 
 Init_UI();
 async function Init_UI() {
@@ -250,7 +250,7 @@ async function getUserLikes(idPost) {
     }
     return [];
 }
-async function GetUser(idUser){
+async function GetUser(idUser) {
     console.log("Get User")
     resultat = await Accounts_API.GetUser(idUser)
     console.log("Apres await")
@@ -260,9 +260,9 @@ async function GetUser(idUser){
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
     let crudIcon = ``;
-    let like = ``;
-    if(loggedUser != null){
-        if(loggedUser.isSuper || loggedUser.isAdmin){
+    let like = ``;
+    if (loggedUser != null) {
+        if (loggedUser.isSuper || loggedUser.isAdmin) {
             crudIcon +=
                 `
                 <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
@@ -270,15 +270,15 @@ function renderPost(post, loggedUser) {
                 `;
         }
 
-        let userLikes = getUserLikes(post.Id).then((res)=>{
+        let userLikes = getUserLikes(post.Id).then((res) => {
             userLikes = res;
         })
         let title = "";
         let nbLike = 0;
         liker = false;
         console.log(userLikes);
-        if(userLikes.res != undefined){
-            userLikes.forEach(user =>{
+        if (userLikes.res != undefined) {
+            userLikes.forEach(user => {
                 title += `${user.prenom} ${user.nom} <br>`
                 if(user.Id == loggedUser.Id){
                     liker = true;
@@ -328,7 +328,7 @@ async function modifierUnLike(idUser, idPost, retirer = false){
             let Likes = response.data;
             if (Likes.length > 0) {
                 Likes.forEach(Like => {
-                    if(Like.idUser == idUser){
+                    if (Like.idUser == idUser) {
                         likeOwner = Like;
                     }
                 });
@@ -336,7 +336,7 @@ async function modifierUnLike(idUser, idPost, retirer = false){
         } else {
             showError(Likes_API.currentHttpError);
         }
-        if(likeOwner != null){
+        if (likeOwner != null) {
             await Likes_API.Delete(likeOwner.Id);
             if (!Likes_API.error) {
                 await showPosts();
@@ -347,8 +347,8 @@ async function modifierUnLike(idUser, idPost, retirer = false){
             }
         }
     }
-    else{
-        let data = { "idUser":idUser, "idPost":idPost }
+    else {
+        let data = { "idUser": idUser, "idPost": idPost }
         await Likes_API.Save(data);
         if (!Likes_API.error) {
             await showPosts();
@@ -379,7 +379,8 @@ function updateDropDownMenu() {
     let DDMenu = $("#DDMenu");
     let selectClass = selectedCategory === "" ? "fa-check" : "fa-fw";
     DDMenu.empty();
-    if (!isConnected) {
+    if (!ConnectedUser) {
+
         DDMenu.append($(`
         <div class="dropdown-item menuItemLayout" id="loginCmd">
             <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
@@ -387,6 +388,17 @@ function updateDropDownMenu() {
         `));
     }
     else {
+        DDMenu.append($(`
+            <div>
+                    <img src="${ConnectedUser.Avatar}" alt="AvatarIMG" class="UserAvatarXSmall"/>${ConnectedUser.Name}
+            </div>
+            `));
+        DDMenu.append($(`<div class="dropdown-divider"></div>`));
+        DDMenu.append($(`
+            <div class="dropdown-item menuItemLayout" id="ModifyUser">
+                <i class="fa-solid fa-users-gear"></i>Modification Profil
+            </div>
+            `));
         DDMenu.append($(`
             <div class="dropdown-item menuItemLayout" id="logoutCmd">
                 <i class="menuIcon fa-solid fa-right-to-bracket"></i> Déconnexion
@@ -423,6 +435,16 @@ function updateDropDownMenu() {
     });
     $('#loginCmd').on('click', function () {
         showLogin();
+    });
+    $("#ModifyUser").on("click", function () {
+        hidePosts();
+        $('#abort').show();
+        $("#viewTitle").text("Modifier l'utilisateur");
+        $("#ConnexionForm").hide();
+        renderUserForm(ConnectedUser);
+    });
+    $("#logoutCmd").on("click", function () {
+        Accounts_API.Logout(ConnectedUser.Id);
     });
     $('.category').on("click", async function () {
         selectedCategory = $(this).text().trim();
@@ -682,79 +704,69 @@ function getFormData($form) {
 
 //////////////////////// Accounts rendering /////////////////////////////////////////////////////////////////
 
-function showLogin(verified = true) {
-    showForm();
+function showLogin(newAccount = false) {
+    hidePosts();
+    $('#abort').show();
+    $("#ConnexionForm").empty();
     $("#viewTitle").text("Connexion");
-    let error = "";
-    let errorMDP = "";
-    if (verified) {
-        $("#form").append(`
-            <form class="form" id="LoginForm">
-                <input 
-                    class="form-control Email"
-                    name="Email"
-                    id="Email"
-                    placeholder="Adresse courriel"
-                    required
-                />
-                <span>${error}</span>
-                <input 
-                    class="form-control"
-                    type="password"
-                    name="Password"
-                    id="Password"
-                    placeholder="Mot de passe"
-                    required
-                />
-                <span>${errorMDP}</span> 
-                </br>
-                <input type="submit" value="Entrer" id="Enter" class="btn btn-primary">
-                <hr>
-                <input type="button" value="Nouveau compte" id="NewAccount" class="btn btn-secondary">
-            </form>
+    let verifSend = "";
+    if (newAccount) {
+        verifSend = `
+        <h2>Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de vérification qui vous sera demandé lors de votre prochaine connexion</h2>
+        `;
+    }
+    $("#ConnexionForm").append(`
+                <form class="form" id="loginForm">
+                    ${verifSend}
+                    <br>
+                    <input 
+                        class="form-control"
+                        name="Email"
+                        id="Email"
+                        placeholder="Adresse courriel"
+                        required
+                        style="margin-bottom:10px;"
+                    />
+                    <input 
+                        class="form-control"
+                        name="Password" 
+                        id="Password" 
+                        placeholder="Mot de passe"
+                        type="password"
+                        required
+                        style="margin-bottom:10px;"
+                    />
+                    <br>
+                    <input type="button" value="Entrer"  style="width: 100%;" id="Connexion" class="btn btn-primary ">
+                    <hr>
+                    <input type="button" value="Nouveau compte" id="CreaterUser" style="width: 100%;" class="btn btn-info"/>
+                </form>
+                <p style="color: red;" id="errorContainerMsg"></p>
         `);
-    }
-    else {
-        $("#form").append(`
-            <span>Votre compte a été créé. Veillez prendre vos courriels pour réccupérer votre code de vérification qui 
-            vous sera demandé lors de votre prochaine connexion</span>
-            <form class="form" id="LoginForm">
-                <input 
-                    class="form-control Email"
-                    name="Email"
-                    id="Email"
-                    placeholder="Adresse courriel"
-                    required
-                />
-                <span>${error}</span>
-                <input 
-                    class="form-control"
-                    type="password"
-                    name="Password"
-                    id="Password"
-                    placeholder="Mot de passe"
-                    required
-                />
-                <span>${errorMDP}</span>
-                <input type="submit" value="Entrer" id="Enter" class="btn btn-primary displayNone">
-                </br>
-                <input type="button" value="Nouveau compte" id="NewAccount" class="btn btn-primary displayNone">
-            </form>
-            `);
-    }
-    $('#LoginForm').on("submit", async function (event) {
-        event.preventDefault();
-        let Account = getFormData($("#LoginForm"));
-        if (!Accounts_API.error) {
-            await showLogin(false);
-            AccountsPanel.scrollToElem(Account.Id);
-        }
-        else
-            showError("Une erreur est survenue! ", Accounts_API.currentHttpError);
-    });
-    $('#cancel').on("click", async function () {
-        await showPosts();
-    });
+        $("#Connexion").on("click", function(e){
+            e.preventDefault();
+            Accounts_API.Connect($("#Email").val(),$("#Password").val());
+        });
+        $("#CreaterUser").on("click", function(){
+            renderAccountForm();
+        });
+}
+
+function showVerifyCode(){
+    $('#vérification').apend(`
+                <h2>Veuillez entrer le code de vérification que vous avez réçu par courriel</h2>
+                <form class="form" id="VerifyForm">
+                    <br>
+                    <input type="text" name="VerifyCode" id="VerifyCode"
+                    placeholder="Code de vérification de courriel"
+                    RequireMessage="Veuillez entrer votre code de vérification"/>
+                    <br>
+                    <hr>
+                    <input type="button" value="Vérifier" id="Verify" class="btn btn-primary">
+                </form>
+                <br>
+                <p style="color: red;" id="errorContainerMsg"></p>
+        `);
 }
 
 async function renderDeleteAccountForm(id) {
@@ -797,119 +809,110 @@ async function renderDeleteAccountForm(id) {
 }
 function newAccount() {
     let Account = {};
+    Account.Id = 0;
     Account.Name = "";
     Account.Email = "";
     Account.Password = "";
     Account.Avatar = "no-avatar.png";
-    Account.Created = 1;
-    Account.VerifyCode = "";
-    Account.Authorizations = AccessControl.user();
     return Account;
 }
 function renderAccountForm(Account = null) {
     let create = Account == null;
-    let error = "";
-    let errorMDP = "";
     if (create) Account = newAccount();
-    $("#form").show();
-    $("#form").empty();
+    $("#ConnexionForm").hide();
+    showForm();
+    $("#viewTitle").text("Inscription");
     $("#form").append(`
         <form class="form" id="AccountForm">
-            <label for="Email" class="form-label">Adresse courriel</label>
-            <fieldset>
+            <input type="hidden" name="Id" id="Id" value="${Account.Id}"/>
+             <div class= "EPform" >
+                <label for="Email" class="form-label">Adresse de courriel </label>
                 <input 
-                    class="form-control Email"
+                    class="form-control  Email "
                     name="Email"
                     id="Email"
-                    placeholder="courriel"
+                    CustomErrorMessage="Ce courriel est déjà utilisé"
+                    placeholder="Courriel"
                     required
                     value="${Account.Email}"
+                    RequireMessage="Veuillez entrer votre courriel" 
+                    InvalidMessage="Veuillez entrer un courriel valide"
+                    style="margin-bottom:10px;"
                 />
-                <input
-                    class="form-control Email"
-                    name="Validation"
-                    id="Validation"
-                    placeholder=Vérification"
+             
+                <input 
+                    class="form-control MatchedInput "
+                    name="VerificationEmail"
+                    id="VerificationEmail"
+                    placeholder="Vérification"
                     required
+                    matchedInputId="Email"
                     value="${Account.Email}"
                 />
-                <span>${error}</span>
-            </fieldset>
-
-            
-            <fieldset>
+            </div>
+            <div class= "EPform" >
+                <label for="Password" class="form-label">Mot de passe </label>
                 <input 
-                    class="form-control"
-                    name="Password"
-                    id="Password"
+                    class="form-control "
+                    name="Password" 
+                    id="Password" 
+                    placeholder="Password"
+                
+                    required
+                    RequireMessage="Veuillez entrer un mot de passe"
+                    value="${Account.Password}"
+                    style="margin-bottom:10px;"
                     type="password"
-                    placeholder="Mot de passe"
+                />
+                <input 
+                    class="form-control MatchedInput"
+                    name="VerificationPassword" 
+                    id="VerificationPassword" 
+                    placeholder="Vérification"
+                    matchedInputId="Password"
+                    type="password"
                     required
                     value="${Account.Password}"
-                />
-                <input
-                    class="form-control"
-                    name="ValidationMDP"
-                    id="ValidationMDP"
-                    type="password"
-                    placeholder=Vérification"
-                    required
-                    value="${Account.Password}"
-                />
-                <span>${errorMDP}</span>
-            </fieldset>
-
-            <fieldset>
+                />   
+            </div>
+            <div class= "EPform" >
+                <label for="Name" class="form-label">Nom</label>
                 <input 
-                    class="form-control"
-                    name="Name"
-                    id="Name"
+                    class="form-control Alpha"
+                    name="Name" 
+                    id="Name" 
                     placeholder="Nom"
                     required
+                    RequireMessage="Veuillez entrer un nom"
+                    InvalidMessage="Le nom comporte un caractère illégal" 
                     value="${Account.Name}"
-                />
-            </fieldset>
-
-            <label class="form-label">Image </label>
-            <div class='imageUploaderContainer'>
+                /> 
+            </div>
+            <div class= "EPform" >
+                   <label class="form-label">Avatar </label>
+                <div class='imageUploaderContainer'>
                 <div class='imageUploader' 
                      newImage='${create}' 
-                     controlId='Image' 
+                     controlId='Avatar' 
                      imageSrc='${Account.Avatar}' 
                      waitingImage="Loading_icon.gif">
                 </div>
             </div>
-            <input type="submit" value="Enregistrer" id="saveAccount" class="btn btn-primary displayNone">
+            </div>
+            <input type="submit" value="Enregistrer" id="saveUser" class="btn btn-primary displayNone">
         </form>
     `);
+    addConflictValidation("http://localhost:5000/accounts/conflict", "Email", "Id")
     initImageUploaders();
-    initFormValidation(); // important do to after all html injection!
-
+    initFormValidation();
     $("#commit").click(function () {
         $("#commit").off();
-        return $('#saveAccount').trigger("click");
-    });
-    $('#Email').on("change", () => {
-        addConflictValidation("/api/validate-Email", "Email", "saveAccount");
+        return $('#saveUser').trigger("click");
     });
     $('#AccountForm').on("submit", async function (event) {
         event.preventDefault();
-        if ($('#Validation').val() != $('#Email').val()) {
-            error = "Les courriel ne corespondent pas";
-        }
-        else if ($('#ValidationMDP').val() != $('#Password').val()) {
-            errorMDP = "Les mots de passe ne corespondent pas";
-        }
-        else {
-            let Account = getFormData($("#AccountForm"));
-            Account = await Accounts_API.Save(Account, create);
-            if (!Accounts_API.error) {
-                await showLogin(false);
-                AccountsPanel.scrollToElem(Account.Id);
-            }
-            else
-                showError("Une erreur est survenue! ", Accounts_API.currentHttpError);
-        }
+        let post = getFormData($("#AccountForm"));
+        post = await Accounts_API.Save(post, create);
     });
     $('#cancel').on("click", async function () {
         await showPosts();

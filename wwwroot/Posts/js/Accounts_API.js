@@ -1,7 +1,7 @@
 
 class Accounts_API {
     static Host_URL() { return "http://localhost:5000"; }
-    static AccountS_API_URL() { return this.Host_URL() + "/api/users" };
+    static AccountS_API_URL() { return this.Host_URL() + "/accounts/register" };
 
     static initHttpState() {
         this.currentHttpError = "";
@@ -28,26 +28,27 @@ class Accounts_API {
             });
         });
     }
-    static async Get(access) {
-        console.log("Allo");
-        if (access == AccessControl.admin()) {
-            Accounts_API.initHttpState();
-            return new Promise(resolve => {
-                $.ajax({
-                    url: this.AccountS_API_URL() + (id != null ? "/" + id : ""),
-                    complete: data => { resolve({ ETag: data.getResponseHeader('ETag'), data: data.responseJSON }); },
-                    error: (xhr) => { Accounts_API.setHttpErrorState(xhr); resolve(null); }
-                });
-            });
-        }
-    }
-
-    static async GetUser(userId) {
+    static async Get(id = null) {
+        Accounts_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: API_URL + "/" + userId,
-                success: user => { currentHttpError = ""; resolve(user); },
-                error: (xhr) => { currentHttpError = xhr.responseJSON.error_description; resolve(null); }
+                url: this.AccountS_API_URL() + (id != null ? "/" + id : ""),
+                complete: data => { resolve({ ETag: data.getResponseHeader('ETag'), data: data.responseJSON }); },
+                error: (xhr) => { Accounts_API.setHttpErrorState(xhr); resolve(null); }
+            });
+        });
+    }
+    static async GetQuery(queryString = "") {
+        Accounts_API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: this.AccountS_API_URL() + queryString,
+                complete: data => {
+                    resolve({ ETag: data.getResponseHeader('ETag'), data: data.responseJSON });
+                },
+                error: (xhr) => {
+                    Accounts_API.setHttpErrorState(xhr); resolve(null);
+                }
             });
         });
     }
@@ -55,19 +56,31 @@ class Accounts_API {
         Accounts_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: create ? this.AccountS_API_URL() : this.AccountS_API_URL() + "/" + data.Id,
-                type: create ? "Account" : "PUT",
+                url: create ? this.AccountS_API_URL() : "http://localhost:5000/accounts/modify/",
+                type: create ? "POST" : "PUT",
                 contentType: 'application/json',
+                headers:{
+                    "Authorization": `Bearer ${TokenAccount}`
+                },
                 data: JSON.stringify(data),
-                success: (data) => { resolve(data); },
+                success: (data) => {
+                    resolve(false);
+                    if(create){
+                        showLogin(true);
+                    }
+                    else{
+                        showPosts();
+                    }
+                    
+                },
                 error: (xhr) => { Accounts_API.setHttpErrorState(xhr); resolve(null); }
             });
         });
     }
-    static async Delete(email) {
+    static async Delete(id) {
         return new Promise(resolve => {
             $.ajax({
-                url: this.AccountS_API_URL() + "/" + email,
+                url: this.POSTS_API_URL() + "/" + id,
                 type: "DELETE",
                 success: () => {
                     Accounts_API.initHttpState();
@@ -78,5 +91,77 @@ class Accounts_API {
                 }
             });
         });
+    }
+
+    static Connect(Email, Password) {
+        $.ajax({
+            url: this.Host_URL() + "/token",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({ "Email": Email, "Password": Password }),
+            success: function (response) {
+                Accounts_API.SuccesConnect(response.User);
+                TokenUser = response.Access_token;
+            },
+            error: function (xhr) {
+                if (xhr.responseJSON == undefined) {
+                    Accounts_API.ErrorConnect("Le serveur ne répond pas");
+                }
+                else {
+                    Accounts_API.Erreur(xhr.responseJSON.error_description);
+                }
+            }
+        });
+    }
+    static Logout(id) {
+        $.ajax({
+            url: "http://localhost:5000/accounts/logout",
+            type: "GET",
+            headers:{
+                "Authorization": `Bearer ${TokenUser}`
+            },
+            success: function (response) {
+                TokenUser = null;
+                ConnectedUser = null;
+                IsConnected = false;
+                showPosts();
+            },
+        });
+    }
+    static Verify(id, code) {
+        $.ajax({
+            type: "GET",
+            url: this.Host_URL() + "/accounts/verify",
+            data: { id: id, code: code },
+            success: function () {
+                Accounts_API.SuccesCode();
+            },
+            error: function (xhr) {
+                Accounts_API.ErrorConnect(xhr);
+            }
+        })
+    }
+    static async SuccesCode() {
+        ConnectedUser = User;
+        IsConnected = true;
+        await showPosts();
+        
+    }
+    static async SuccesConnect(User) {
+        ConnectedUser = User;
+        console.log(User.VerifyCode);
+        if (User.VerifyCode != "verified") {
+            showVerifyCode();
+        }
+        else {
+            await showPosts();
+            IsConnected = true;
+        }
+    }
+    static ErrorConnect(message) {
+        $("#errorContainerMsg").text(message);
+    }
+    static Erreur(message) {
+        $("#errorContainerMsg").text(message);
     }
 }
