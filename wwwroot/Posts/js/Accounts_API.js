@@ -106,7 +106,7 @@ class Accounts_API {
     static Connect(Email, Password) {
         $.ajax({
             url: this.Host_URL() + "/token",
-            type: "Account",
+            type: "POST",
             contentType: 'application/json',
             data: JSON.stringify({ "Email": Email, "Password": Password }),
             success: function (response) {
@@ -125,22 +125,21 @@ class Accounts_API {
     }
     static Logout(id) {
         $.ajax({
-            url: `http://localhost:5000/accounts/logout?accountId=${id}`,
-            type: "Account",
-            headers: {
-                "Authorization": `Bearer ${TokenUser }`
+            url: "http://localhost:5000/accounts/logout",
+            type: "GET",
+            headers:{
+                "Authorization": `Bearer ${TokenUser}`
             },
             success: function (response) {
-                TokenUser  = null;
-                ConnectedUser  = null;
-                IsConnected = false;
-                showAccounts();
+                TokenUser = null;
+                this.disconnecting();
             },
-            error: function (xhr, status, error) {
-                console.error("Logout failed:", status, error);
-                // Handle error response
-            }
         });
+    }
+    static disconnecting() {
+        ConnectedUser = null;
+        IsConnected = false;
+        showPosts();
     }
     static Verify(id, code) {
         $.ajax({
@@ -168,7 +167,19 @@ class Accounts_API {
             showVerifyCode();
         }
         else {
-            await showAccounts();
+                const userTokenData = {
+                    token: User.Access_token,
+                    expireTime: User.Expire_Time,
+                    user: {
+                        id: User.Id,
+                        name: User.Name,
+                        email: User.Email,
+                        avatar: User.Avatar
+                    }
+                };
+            
+            localStorage.setItem('userSession', JSON.stringify(userTokenData));
+            await showPosts();
             IsConnected = true;
         }
     }
