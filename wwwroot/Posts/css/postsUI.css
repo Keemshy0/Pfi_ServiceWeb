@@ -164,3 +164,23 @@
     overflow-y: auto;
     scrollbar-gutter: stable;
 }
+.postOwnerContainer {
+    display: flex; /* Alignement horizontal */
+    align-items: center; /* Centre les éléments verticalement */
+    gap: 8px; /* Espacement entre l'image et le texte */
+}
+
+.userAvatar {
+    width: 30px; /* Taille fixe pour l'avatar */
+    height: 30px;
+    border-radius: 50%; /* Rend l'image circulaire */
+    object-fit: cover; /* Assure un bon ajustement de l'image */
+    border: 1px solid #ccc; /* Optionnel : bordure légère */
+}
+
+.userName {
+    font-size: 0.9rem; /* Taille du texte */
+    color: #333; /* Couleur du texte */
+    font-weight: bold;
+    white-space: nowrap; /* Empêche le texte de passer à la ligne */
+}

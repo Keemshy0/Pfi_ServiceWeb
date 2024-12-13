@@ -95,7 +95,7 @@ function toogleShowKeywords() {
 /////////////////////////// Views management ////////////////////////////////////////////////////////////
 
 function intialView() {
-    $("#createPost").show();
+    $("#createPost").hide();
     $("#hiddenIcon").hide();
     $("#hiddenIcon2").hide();
     $('#menu').show();
@@ -210,7 +210,8 @@ let loggedUser = {
     "Id": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c"
 }
 //
-
+//loggedUser = null;
+//
 async function renderPosts(queryString) {
     let endOfData = false;
     queryString += "&sort=date,desc";
@@ -228,9 +229,10 @@ async function renderPosts(queryString) {
         currentPostsCount = parseInt(currentETag.split("-")[0]);
         let Posts = response.data;
         if (Posts.length > 0) {
-            Posts.forEach(Post => {
-                postsPanel.append(renderPost(Post, loggedUser));    //loggedUser
-            });
+            for (let post of Posts) {
+                let renderPostItem = await renderPost(post, loggedUser); // Attendre la résolution de renderPost
+                postsPanel.append(renderPostItem); // Ajouter le post au DOM
+            }
         } else
             endOfData = true;
         linefeeds_to_Html_br(".postText");
@@ -244,41 +246,27 @@ async function renderPosts(queryString) {
 }
 async function getUserLikes(idPost) {
     let queryString = "?keywords=" + idPost
-    let userLikes = [];
     let response = await Likes_API.GetQuery(queryString);
     if (!Likes_API.error) {
         currentETag = response.ETag;
         currentPostsCount = parseInt(currentETag.split("-")[0]);
         let Likes = response.data;
         if (Likes.length > 0) {
-            Likes.forEach(Like => {
-                response = Accounts_API.GetUser(Like.idUser)
-                let user = response.data
-                userLikes.push(user)
-            });
-            return userLikes;
+            return Likes;
         }
     } else {
         showError(Posts_API.currentHttpError);
     }
     return [];
 }
-async function GetUser(idUser) {
-    console.log("Get User")
-    resultat = await Accounts_API.GetUser(idUser).then(res=>{
-        console.log(res);
-        resultat = res;
-    })
-    console.log("Apres await")
-    console.log(resultat)
-    return resultat.data
-}
-function renderPost(post, loggedUser) {
+
+async function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
     let crudIcon = ``;
     let like = ``;
     if (loggedUser != null) {
         if (loggedUser.isSuper || loggedUser.isAdmin) {
+            $("#createPost").show();
             crudIcon +=
                 `
                 <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
@@ -286,33 +274,29 @@ function renderPost(post, loggedUser) {
                 `;
         }
 
-        let userLikes = getUserLikes(post.Id).then((res) => {
-            userLikes = res;
-        })
+        let likes = await getUserLikes(post.Id)
         let title = "";
         let nbLike = 0;
         liker = false;
-        console.log(userLikes);
-        if (userLikes.res != undefined) {
-            userLikes.forEach(user => {
-                title += `${user.prenom} ${user.nom} <br>`
-                if(user.Id == loggedUser.Id){
+        console.log(likes);
+        if (likes != undefined) {
+            likes.forEach(like => {
+                title += `${like.UserName} `
+                if(like.IdUser == loggedUser.Id){
                     liker = true;
                 }
             })
-            nbLike = userLikes.length
+            nbLike = likes.length
         }   // fa-solid fa-regular qui appelle la fonction modifier Like
         if(liker){
-            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up" onclick="modifierUnLike(${post.Id},${loggedUser.Id}, true)" title="${title}">${nbLike}</span>`
+            like += `<span class="likeCmd cmdIconSmall fa-solid fa-thumbs-up" onclick="modifierUnLike('${loggedUser.Id}','${post.Id}',true)" title="${title}">${nbLike}</span>`
         }
         else{
-            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up" onclick="modifierUnLike('${post.Id}','${loggedUser.Id}')" title="${title}">${nbLike}</span>`
+            like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up" onclick="modifierUnLike('${loggedUser.Id}','${post.Id}')" title="${title}">${nbLike}</span>`
         }
     }
     crudIcon += like;
     //
-    console.log(post.Owner);
-    let user = GetUser(post.Owner);
     return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
@@ -322,8 +306,10 @@ function renderPost(post, loggedUser) {
             <div class="postTitle"> ${post.Title} </div>
             <img class="postImage" src='${post.Image}'/>
             <div class="postDate"> ${date} </div>
-            <img class="avatar postOwner" src='${user.Avatar}'/>
-            <div class="name postOwner"> ${user.Name} </div>
+            <div class="postOwnerContainer">
+                <img class="userAvatar postOwner" src='${post.AvatarOwner}'/>
+                <div class="userName  postOwner"> ${post.NameOwner} </div>
+            </div>
             <div postId="${post.Id}" class="postTextContainer hideExtra">
                 <div class="postText" >${post.Text}</div>
             </div>
@@ -346,7 +332,7 @@ async function modifierUnLike(idUser, idPost, retirer = false){
             let Likes = response.data;
             if (Likes.length > 0) {
                 Likes.forEach(Like => {
-                    if (Like.idUser == idUser) {
+                    if (Like.IdUser == idUser) {
                         likeOwner = Like;
                     }
                 });
@@ -356,7 +342,7 @@ async function modifierUnLike(idUser, idPost, retirer = false){
         }
         if (likeOwner != null) {
             await Likes_API.Delete(likeOwner.Id);
-            if (!Likes_API.error) {
+            if (!(Likes_API.currentStatus >= 400)) {
                 await showPosts();
             }
             else {
