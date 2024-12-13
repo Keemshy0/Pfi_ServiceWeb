@@ -17,8 +17,14 @@ let itemLayout;
 let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
-let ConnectedUser = localStorage.getItem('userSession');
-let IsConnected = ConnectedUser == null ? false : true ;
+let connectedUser = null;
+
+function getUserInfo() {
+    const session = JSON.parse(localStorage.getItem('userSession'));
+    if (!session) return null;
+
+    return session.user;
+}
 
 Init_UI();
 async function Init_UI() {
@@ -36,7 +42,6 @@ async function Init_UI() {
         toogleShowKeywords();
         showPosts();
     });
-
     installKeywordsOnkeyupEvent();
     await showPosts();
     start_Periodic_Refresh();
@@ -194,25 +199,6 @@ function start_Periodic_Refresh() {
         periodicRefreshPeriod * 1000);
 }
 
-//
-let loggedUser = {
-    "Email": "Saliha.Yacoub@clg.qc.ca",
-    "Password": "password",
-    "Name": "Saliha Yacoub",
-    "Avatar": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c.png",
-    "Created": 1731790056,
-    "VerifyCode": "verified",
-    "Authorizations": {
-        "readAccess": 2,
-        "writeAccess": 2
-    },
-    "Verifycode": "verified",
-    "Id": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c",
-    "isSuper":true
-}
-//
-//loggedUser = null;
-//
 async function renderPosts(queryString) {
     let endOfData = false;
     queryString += "&sort=date,desc";
@@ -231,7 +217,7 @@ async function renderPosts(queryString) {
         let Posts = response.data;
         if (Posts.length > 0) {
             for (let post of Posts) {
-                let renderPostItem = await renderPost(post, loggedUser); // Attendre la résolution de renderPost
+                let renderPostItem = await renderPost(post, localStorage.getItem("userSession")); // Attendre la résolution de renderPost
                 postsPanel.append(renderPostItem); // Ajouter le post au DOM
             }
         } else
@@ -289,7 +275,6 @@ async function renderPost(post, loggedUser) {
         let title = "";
         let nbLike = 0;
         liker = false;
-        console.log(likes);
         if (likes != undefined) {
             likes.forEach(like => {
                 title += `${like.UserName} `
@@ -306,7 +291,10 @@ async function renderPost(post, loggedUser) {
             like += `<span class="likeCmd cmdIconSmall fa-regular fa-thumbs-up" onclick="modifierUnLike('${loggedUser.Id}','${post.Id}')" title="${title}">${nbLike}</span>`
         }
     }
-    crudIcon += like;
+    if(loggedUser.isUser || loggedUser.isSuper || loggedUser.isAdmin)
+        crudIcon += like;
+    else
+        crudIcon = "";
     //
     return $(`
         <div class="post" id="${post.Id}">
@@ -394,8 +382,9 @@ function updateDropDownMenu() {
     let DDMenu = $("#DDMenu");
     let selectClass = selectedCategory === "" ? "fa-check" : "fa-fw";
     DDMenu.empty();
-    if (!ConnectedUser) {
+    let account = getUserInfo();
 
+    if (account == null) {
         DDMenu.append($(`
         <div class="dropdown-item menuItemLayout" id="loginCmd">
             <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
@@ -405,7 +394,8 @@ function updateDropDownMenu() {
     else {
         DDMenu.append($(`
             <div>
-                    <img src="${ConnectedUser.Avatar}" alt="AvatarIMG" class="UserAvatarXSmall"/>${ConnectedUser.Name}
+                    <img src="${account.avatar}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                  <strong>  <span>${account.name}</span></strong>  
             </div>
             `));
         DDMenu.append($(`<div class="dropdown-divider"></div>`));
@@ -459,7 +449,7 @@ function updateDropDownMenu() {
         renderUserForm(ConnectedUser);
     });
     $("#logoutCmd").on("click", function () {
-        Accounts_API.Logout(ConnectedUser .Id);
+        logout();
     });
     $('.category').on("click", async function () {
         selectedCategory = $(this).text().trim();
@@ -467,6 +457,14 @@ function updateDropDownMenu() {
         updateDropDownMenu();
     });
 }
+
+async function logout(){
+    let account = getUserInfo();
+    await Accounts_API.Logout(account.Id);
+    localStorage.removeItem('userSession');
+    showPosts()
+}
+
 function attach_Posts_UI_Events_Callback() {
 
     linefeeds_to_Html_br(".postText");
@@ -784,7 +782,7 @@ function showVerifyCode(){
         `);
 }
 
-async function renderDeleteAccountForm(id) {
+/*async function renderDeleteAccountForm(id) {
     let response = await Accounts_API.Get(id)
     if (!Accounts_API.error) {
         let Account = response.data;
@@ -821,7 +819,7 @@ async function renderDeleteAccountForm(id) {
         }
     } else
         showError(Accounts_API.currentHttpError);
-}
+}*/
 function newAccount() {
     let Account = {};
     Account.Id = 0;

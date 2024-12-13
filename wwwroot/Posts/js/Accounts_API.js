@@ -87,6 +87,17 @@ class Accounts_API {
             });
         });
     }
+    static async Logout(id){
+        Accounts_API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url:   this.AccountS_API_URL() + `/logout?userId=${id}` ,
+                type:    "GET" ,
+                success: (data) => { resolve(data); },
+                error: (xhr) => { Users_API.setHttpErrorState(xhr); resolve(xhr.status); }
+            });
+        });
+    }
     static async Delete(id) {
         return new Promise(resolve => {
             $.ajax({
@@ -121,19 +132,6 @@ class Accounts_API {
                     Accounts_API.Erreur(xhr.responseJSON.error_description);
                 }
             }
-        });
-    }
-    static Logout(id) {
-        $.ajax({
-            url: "http://localhost:5000/accounts/logout",
-            type: "GET",
-            headers:{
-                "Authorization": `Bearer ${TokenUser}`
-            },
-            success: function (response) {
-                TokenUser = null;
-                this.disconnecting();
-            },
         });
     }
     static disconnecting() {
