@@ -126,18 +126,13 @@ class Accounts_API {
             },
             error: function (xhr) {
                 if (xhr.responseJSON == undefined) {
-                    Accounts_API.ErrorConnect("Le serveur ne répond pas");
+                    $("#errorContainerMsg").text("Le serveur ne répond pas");
                 }
                 else {
                     Accounts_API.Erreur(xhr.responseJSON.error_description);
                 }
             }
         });
-    }
-    static disconnecting() {
-        ConnectedUser = null;
-        IsConnected = false;
-        showPosts();
     }
     static Verify(id, code) {
         $.ajax({
@@ -178,11 +173,7 @@ class Accounts_API {
             
             localStorage.setItem('userSession', JSON.stringify(userTokenData));
             await showPosts();
-            IsConnected = true;
         }
-    }
-    static ErrorConnect(message) {
-        $("#errorContainerMsg").text(message);
     }
     static Erreur(message) {
         $("#errorContainerMsg").text(message);
