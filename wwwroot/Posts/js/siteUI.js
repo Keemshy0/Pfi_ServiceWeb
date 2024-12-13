@@ -207,7 +207,8 @@ let loggedUser = {
         "writeAccess": 2
     },
     "Verifycode": "verified",
-    "Id": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c"
+    "Id": "5b156ce0-46c0-11ee-9c7d-4dfffb69e19c",
+    "isSuper":true
 }
 //
 //loggedUser = null;
@@ -265,13 +266,23 @@ async function renderPost(post, loggedUser) {
     let crudIcon = ``;
     let like = ``;
     if (loggedUser != null) {
-        if (loggedUser.isSuper || loggedUser.isAdmin) {
+        if (loggedUser.isAdmin) {
             $("#createPost").show();
             crudIcon +=
                 `
                 <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
                 <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
                 `;
+        }
+        if (loggedUser.isSuper) {
+            $("#createPost").show();
+            if(post.Owner == loggedUser.Id){
+                crudIcon +=
+                `
+                <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
+                <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
+                `;
+            }
         }
 
         let likes = await getUserLikes(post.Id)
